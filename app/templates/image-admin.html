@@ -2,7 +2,7 @@
 {% block content %}
 <div class="row">
     <div class="signup-form" style="width: 500px;">
-        <h3>Upload File (acceptance only *.jpg or *.zip)</h3>
+        <h3>Upload photo from file (*.jpg or *.zip)</h3>
         <form action="{{ url_for('main.handleFileUpload') }}" method="POST" enctype="multipart/form-data">
             Upload one or more files using this form:
             <input type="file" name="photo"/><br>

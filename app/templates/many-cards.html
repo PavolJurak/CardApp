@@ -3,19 +3,20 @@
 <div class="row">
     <div class="signup-form" style="width: 500px;">
         <h3>Create identifications cards from csv file</h3>
-        <span class="title-form-text">Example "id"; "first-name"; "last-name"; "study-field"</span>
         <div class="form-group">
             <div class="row">
+                <form action="{{ url_for('main.handleCsvFileUpload') }}" method="POST" enctype="multipart/form-data">
                 <div class="col-sm-8">
                     <div class="row">
-                        <input type="file" class="form-control">
+                        <input type="file" name="persons" class="form-control">
                     </div>
                 </div>
                 <div class="col-sm-4">
                     <div class="row">
-                        <input type="submit" class="btn btn-success">
+                        <input type="submit" value="Upload" class="btn btn-success">
                     </div>
                 </div>
+                </form>
             </div>
         </div>
     </div>

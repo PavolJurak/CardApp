@@ -93,7 +93,7 @@ class CardGenerator():
             draw.text((1050, 825), self.study_field, (0, 0, 0), font=fontName)
 
         #SAVE NEW IMAGE
-        new_image_name = str(int(datetime.timestamp(datetime.now())))
+        new_image_name = str((datetime.timestamp(datetime.now()))).replace('.', '')
         background.save(self.path_store_image + "/" + new_image_name + ".jpg")
 
         return new_image_name

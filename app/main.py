@@ -1,5 +1,6 @@
 import os
 import zipfile
+import csv
 from pathlib import Path
 from flask import Blueprint, request, url_for, jsonify, redirect, flash
 from flask import render_template, redirect
@@ -9,6 +10,7 @@ from .img_gen import CardGenerator
 main = Blueprint('main', __name__)
 current_dir = os.path.dirname(__file__)
 upload_path = os.path.join(current_dir, 'cards_images', 'person-image')
+upload_csv_path = os.path.join(current_dir, 'cards_images', 'person-csv')
 
 @main.route('/')
 def index():
@@ -71,10 +73,27 @@ def create_image():
     return "{'status': 'success', 'img': {}}".format("<img src=/static/images/ja.jpeg>")
     '''
 
-@main.route('/create-image-csv', methods=['GET', 'POST'])
+@main.route('/upload-csv', methods=['POST'])
 @login_required
-def createImegeFromCsv():
-    return render_template('many-cards.html')
+def handleCsvFileUpload():
+    if 'persons' not in request.files:
+        flash('No persons file')
+    if 'persons' in request.files:
+        person_csv = request.files['persons']
+        if person_csv.filename != '' and '.' in person_csv.filename:
+            if person_csv.filename.split('.')[1] in ['txt']:
+                person_csv.save(os.path.join(upload_csv_path, person_csv.filename))
+                file = os.path.join(upload_csv_path, person_csv.filename)
+                if validationCsvFile(file):
+                    flash('Csv file is correnct')
+                    createImageFromCsv(file)
+                else:
+                    flash('Csv file is incorect')
+            else:
+                flash('File is not txt extension')
+        else:
+            flash('File is without extension')
+    return redirect(url_for('main.manyCards'))
 
 @main.route('/check-photo/<id>', methods=['GET'])
 @login_required
@@ -93,7 +112,7 @@ def checkPhotoExist(id):
 @login_required
 def handleFileUpload():
     if 'photo' not in request.files:
-        flash('No photo files')
+        flash('No photo file')
     if 'photo' in request.files:
         photo = request.files['photo']
         if photo.filename != '' and '.' in photo.filename:
@@ -111,12 +130,16 @@ def handleFileUpload():
             flash('Not found extension in upload file')
     return render_template('image-admin.html')
 
-@main.route('/image-admin', methods=['GET', 'POST'])
+@main.route('/image-admin', methods=['GET','POST'])
 @login_required
 def image_admin():
     if request.method == 'GET':
         return render_template('image-admin.html')
 
+@main.route('/create-image-csv', methods=['GET'])
+@login_required
+def manyCards():
+    return render_template('many-cards.html')
 
 def extractZipFile(file, upload_path):
     count = 0
@@ -128,3 +151,27 @@ def extractZipFile(file, upload_path):
                     zip_ref.extract(photo.filename, upload_path)
                     count = count + 1
     return count
+
+def validationCsvFile(file):
+    error = False
+    message = []
+    if os.path.isfile(file):
+        with open(file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            for row in csv_reader:
+                print('error', row)
+                if len(row) != 4:
+                    message.append('Line {} : invalid number fields'.format(id))
+                    error = True
+    return not error
+
+def createImageFromCsv(file):
+    if os.path.isfile(file):
+        with open(file) as csv_file:
+            new_image = CardGenerator()
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            for row in csv_reader:
+                new_image.set_id(row[0]).set_first_name(row[1]).set_last_name(row[2]).set_study_field(row[3]).create_image()
+
+
+
