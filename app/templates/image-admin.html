@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="signup-form" style="width: 500px;">
+        <h3>Upload File (acceptance only *.jpg or *.zip)</h3>
+        <form action="{{ url_for('main.handleFileUpload') }}" method="POST" enctype="multipart/form-data">
+            Upload one or more files using this form:
+            <input type="file" name="photo"/><br>
+            <input type="submit" value="Upload"/>
+        </form>
+    </div>
+</div>
+{% endblock %}

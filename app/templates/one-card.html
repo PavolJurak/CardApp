@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-sm-6">
+    <div class="signup-form form-right">
+        <h4 class="title-form-text">Values</h4>
+        <div class="row">
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <input type="text" id="id" class="form-control" placeholder="ID">
+                    </div>
+                    <div class="col-sm-4">
+                        <button type="button" id="check-photo" class="form-control btn btn-primary">Check photo</button>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-center form-control" style="color: white;" id="check-text"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="text" id="first-name" class="form-control" placeholder="First name">
+            </div>
+            <div class="form-group">
+                <input type="text" id="last-name" class="form-control" placeholder="Last name">
+            </div>
+            <div class="form-group">
+                <select class="form-control" id="select-study">
+                    <option value="FYZ">Fyzioterapia</option>
+                    <option value="OS">Ošetrovanie</option>
+                    <option value="LVM">Laboratórne vyšetrovacie metódy v zdravotníctve</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="button" id="show-image-view" class="btn btn-success btn-lg btn-block">Show image view</button>
+            </div>
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <a href="" style="display: None" type="button" id="save-image" class="btn btn-success btn-lg" download="card.jpg">Save image</a>
+                    </div>
+                    <div class="col-sm-6 text-right">
+                        <button style="display: None" type="button" id="print-image" class="btn btn-primary btn-lg" onclick="PrintImage()">Print image</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="col-sm-6">
+    <div class="signup-form form-left">
+        <h4 class="title-form-text">View</h4>
+        <div class="row">
+            <div id="img-result">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+
+function clearCheckText() {
+    $('#check-text').text('').css('background-color', '#fff');
+}
+
+function ImageToPrint(source) {
+    return "<img src='" + source + "' />";
+}
+
+function PrintImage(source) {
+    var imgSrc = $('#img-result img').attr('src');
+    var Pagelink = "about:blank";
+    var pwa = window.open();
+    pwa.document.open();
+    pwa.document.write(ImageToPrint(imgSrc));
+    pwa.window.print();
+    pwa.window.close();
+    pwa.document.close();
+}
+
+function getFormData() {
+    let id = document.getElementById("id");
+    let firstName = document.getElementById("first-name");
+    let lastName = document.getElementById("last-name");
+    let studyField = document.getElementById("select-study");
+
+    let data = {
+        'id': id.value,
+        'first-name': firstName.value,
+        'last-name': lastName.value,
+        'study-field': studyField.options[studyField.selectedIndex].text
+    };
+
+    return JSON.stringify(data);
+}
+
+$(document).ready(function() {
+    $('#show-image-view').click(function() {
+        $.post({
+            url: "{{ url_for('main.create_image') }}",
+            dateType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: getFormData(),
+            success: function(result) {
+                if (result['status'] == 'success') {
+                    var img=document.createElement("IMG");
+                    img.src=result['img'];
+                    $('#img-result').html('').append(img);
+                    $('#save-image').show();
+                    $('#save-image').attr("src", result['img']);
+                    $('#print-image').show();
+                } else {
+                    $('#img-result').html('').append('Error');
+                }
+                clearCheckText();
+            }
+        });
+    });
+
+    $('#check-photo').click(function() {
+        let id = $('#id').val();
+        console.log(id);
+        if (id != "") {
+            $.get({
+                url: "{{ url_for('main.checkPhotoExist',id=id) }}" + id,
+                contentType: "application/json; charset=utf-8",
+                success: function(result) {
+                    if (result['status'] == 'success') {
+                        let message = result['message'];
+                        $('#check-text').text(message);
+                        if (message == 'OK') {
+                            $('#check-text').animate({backgroundColor: 'green'}, "slow");
+                        } else {
+                            $('#check-text').animate({backgroundColor: 'red'}, "slow");
+                        }
+                    }
+                }
+            });
+        }
+    });
+});
+{% endblock %}
