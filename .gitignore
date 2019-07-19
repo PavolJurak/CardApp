@@ -1,5 +1,5 @@
 venv
-app/cards_images/*
-app/static/images/*
+app/cards_images/person-image/default.jpg
+app/static/images/*.jpg
 .idea/
 __pycache__/
