@@ -1,6 +1,8 @@
 import os
 import zipfile
+from zipfile import ZipFile
 import csv
+from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, request, url_for, jsonify, redirect, flash
 from flask import render_template, redirect
@@ -11,6 +13,7 @@ main = Blueprint('main', __name__)
 current_dir = os.path.dirname(__file__)
 upload_path = os.path.join(current_dir, 'cards_images', 'person-image')
 upload_csv_path = os.path.join(current_dir, 'cards_images', 'person-csv')
+path_store_image = os.path.join(current_dir, 'static', 'images')
 
 @main.route('/')
 def index():
@@ -86,7 +89,15 @@ def handleCsvFileUpload():
                 file = os.path.join(upload_csv_path, person_csv.filename)
                 if validationCsvFile(file):
                     flash('Csv file is correnct')
-                    createImageFromCsv(file)
+                    photos_name = createImageFromCsv(file)
+
+                    #Create zip file from photos
+                    new_dir = 'photos' + str(datetime.timestamp(datetime.now())).replace('.', '') + '.zip'
+                    new_dir = os.path.join(path_store_image, new_dir)
+                    with ZipFile(new_dir, 'w') as zip:
+                        for file in photos_name:
+                            file = file + '.jpg'
+                            zip.write(os.path.join(path_store_image, file), os.path.basename(file))
                 else:
                     flash('Csv file is incorect')
             else:
@@ -166,12 +177,14 @@ def validationCsvFile(file):
     return not error
 
 def createImageFromCsv(file):
+    list_img = []
     if os.path.isfile(file):
         with open(file) as csv_file:
             new_image = CardGenerator()
             csv_reader = csv.reader(csv_file, delimiter=';')
             for row in csv_reader:
-                new_image.set_id(row[0]).set_first_name(row[1]).set_last_name(row[2]).set_study_field(row[3]).create_image()
-
+                l = new_image.set_id(row[0]).set_first_name(row[1]).set_last_name(row[2]).set_study_field(row[3]).create_image()
+                list_img.append(l)
+    return list_img
 
 
