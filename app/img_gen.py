@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import csv
 from PIL import Image, ImageFont, ImageDraw
 
 class CardGenerator():
@@ -97,3 +98,11 @@ class CardGenerator():
         background.save(self.path_store_image + "/" + new_image_name + ".jpg")
 
         return new_image_name
+
+    def create_image_from_csv(self, file):
+        persons = []
+        with open(file) as csv_file:
+            new_image = CardGenerator()
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            for row in csv_reader:
+                new_image_path = new_image.set_id(row[0]).set_first_name(row[1])
