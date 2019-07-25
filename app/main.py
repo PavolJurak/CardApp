@@ -4,10 +4,13 @@ from zipfile import ZipFile
 import csv
 from datetime import datetime
 from pathlib import Path
-from flask import Blueprint, request, url_for, jsonify, redirect, flash
+from flask import Blueprint, request, url_for, jsonify, redirect, flash, send_from_directory
 from flask import render_template, redirect
-from flask_login import login_required
+from flask_login import login_required, current_user
 from .img_gen import CardGenerator
+from app.models import User, Task
+from app import db
+from app import const
 
 main = Blueprint('main', __name__)
 current_dir = os.path.dirname(__file__)
@@ -22,7 +25,12 @@ def index():
 @main.route('/profile')
 @login_required
 def profile():
-    return 'Profile'
+    user = User.query.get(current_user.id)
+    task = Task(person=current_user, csv_file='zoznam.csv')
+    #task = Task(user_id=current_user.id)
+    db.session.add(task)
+    db.session.commit()
+    return 'Profile' + str(user.username)
 
 @main.route('/card-duplicate')
 @login_required
@@ -61,10 +69,10 @@ def create_image():
             new_image.set_last_name(data['last-name'])
         if data['study-field'] != "":
             new_image.set_study_field(data['study-field'])
-        path_to_image = new_image.create_image()
+        image_name = new_image.create_image()
 
         json_response["status"] = "success"
-        json_response["img"] = url_for("static", filename="images/" + path_to_image + ".jpg")
+        json_response["img"] = url_for('main.protected', filename=image_name)
         return jsonify(json_response)
     '''
     json_response = {"status": None, "img": None}
@@ -150,7 +158,13 @@ def image_admin():
 @main.route('/create-image-csv', methods=['GET'])
 @login_required
 def manyCards():
-    return render_template('many-cards.html')
+    task = Task.query.filter_by(user_id=current_user.id).all()
+    return render_template('many-cards.html', tasks=task)
+
+@main.route('/generated/<path:filename>')
+@login_required
+def protected(filename):
+    return send_from_directory(os.path.join(const.GENERATED_PATH_DIR), filename)
 
 def extractZipFile(file, upload_path):
     count = 0

@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import csv
 from PIL import Image, ImageFont, ImageDraw
+from app import const
 
 class CardGenerator():
     FIRST_NAME = 0
@@ -94,10 +95,10 @@ class CardGenerator():
             draw.text((1050, 825), self.study_field, (0, 0, 0), font=fontName)
 
         #SAVE NEW IMAGE
-        new_image_name = str((datetime.timestamp(datetime.now()))).replace('.', '')
-        background.save(self.path_store_image + "/" + new_image_name + ".jpg")
+        image_name = str((datetime.timestamp(datetime.now()))).replace('.', '') + '.jpg'
+        background.save(os.path.join(const.GENERATED_PATH_DIR, image_name))
 
-        return new_image_name
+        return image_name
 
     def create_image_from_csv(self, file):
         persons = []

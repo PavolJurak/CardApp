@@ -55,7 +55,7 @@ def signup_post():
 @login_required
 def logout():
     logout_user()
-    return 'Logout'
+    return redirect(url_for('auth.login'))
 
 @auth.route('/lost-password')
 def lost_password():

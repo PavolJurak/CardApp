@@ -34,13 +34,21 @@
                 </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>zoznam.csv</td>
-                        <td>12.05.2018</td>
-                        <td>False</td>
-                        <td>Waiting</td>
+                    {% for task in tasks %}
+                    <tr {% if task.completed == True %} style="background-color: green; color: white;" {% endif %}>
+                        <td>{{ task.id }}</td>
+                        <td>{{ task.csv_file }}</td>
+                        <td>{{ task.upload }}</td>
+                        <td>{{ task.completed }}</td>
+                        <td>
+                         {% if task.zip_file %}
+                            <a href="{{ url_for('main.protected',filename=task.zip_file) }}">Download</a>
+                         {% else %}
+                            Waiting for finish
+                         {% endif %}
+                        </td>
                     </tr>
+                    {% endfor %}
                 </tbody>
             </table>
 </div>
