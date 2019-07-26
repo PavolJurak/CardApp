@@ -2,6 +2,7 @@ import os
 import zipfile
 from zipfile import ZipFile
 import csv
+import threading
 from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, request, url_for, jsonify, redirect, flash, send_from_directory
@@ -11,6 +12,7 @@ from .img_gen import CardGenerator
 from app.models import User, Task
 from app import db
 from app import const
+from sqlalchemy import desc
 
 main = Blueprint('main', __name__)
 current_dir = os.path.dirname(__file__)
@@ -25,12 +27,7 @@ def index():
 @main.route('/profile')
 @login_required
 def profile():
-    user = User.query.get(current_user.id)
-    task = Task(person=current_user, csv_file='zoznam.csv')
-    #task = Task(user_id=current_user.id)
-    db.session.add(task)
-    db.session.commit()
-    return 'Profile' + str(user.username)
+    return render_template('profil.html')
 
 @main.route('/card-duplicate')
 @login_required
@@ -50,13 +47,13 @@ def one_card():
 @main.route('/report')
 @login_required
 def report():
-    return render_template('card-duplicate.html')
+    return render_template('report.html')
 
 
 @main.route('/create-image', methods=['POST'])
 @login_required
 def create_image():
-    json_response = {"status": None, "img": None}
+    json_response = {"status": "error", "img": None}
     if request.get_json():
         new_image = CardGenerator()
         data = request.get_json()
@@ -70,10 +67,9 @@ def create_image():
         if data['study-field'] != "":
             new_image.set_study_field(data['study-field'])
         image_name = new_image.create_image()
-
         json_response["status"] = "success"
         json_response["img"] = url_for('main.protected', filename=image_name)
-        return jsonify(json_response)
+    return jsonify(json_response)
     '''
     json_response = {"status": None, "img": None}
     if request.get_json():
@@ -96,16 +92,17 @@ def handleCsvFileUpload():
                 person_csv.save(os.path.join(upload_csv_path, person_csv.filename))
                 file = os.path.join(upload_csv_path, person_csv.filename)
                 if validationCsvFile(file):
-                    flash('Csv file is correnct')
-                    photos_name = createImageFromCsv(file)
+                    flash('Csv file is correct')
+                    startThreadsForGenImageFromCsv(current_user, file)
+                    #photos_name = createImageFromCsv(file)
 
                     #Create zip file from photos
-                    new_dir = 'photos' + str(datetime.timestamp(datetime.now())).replace('.', '') + '.zip'
-                    new_dir = os.path.join(path_store_image, new_dir)
-                    with ZipFile(new_dir, 'w') as zip:
-                        for file in photos_name:
-                            file = file + '.jpg'
-                            zip.write(os.path.join(path_store_image, file), os.path.basename(file))
+                    #new_dir = 'photos' + str(datetime.timestamp(datetime.now())).replace('.', '') + '.zip'
+                    #new_dir = os.path.join(path_store_image, new_dir)
+                    #with ZipFile(new_dir, 'w') as zip:
+                        #for file in photos_name:
+                            #file = file + '.jpg'
+                            #zip.write(os.path.join(path_store_image, file), os.path.basename(file))
                 else:
                     flash('Csv file is incorect')
             else:
@@ -158,7 +155,7 @@ def image_admin():
 @main.route('/create-image-csv', methods=['GET'])
 @login_required
 def manyCards():
-    task = Task.query.filter_by(user_id=current_user.id).all()
+    task = Task.query.filter_by(user_id=current_user.id).order_by(desc('upload')).all()
     return render_template('many-cards.html', tasks=task)
 
 @main.route('/generated/<path:filename>')
@@ -184,21 +181,45 @@ def validationCsvFile(file):
         with open(file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=';')
             for row in csv_reader:
-                print('error', row)
                 if len(row) != 4:
                     message.append('Line {} : invalid number fields'.format(id))
                     error = True
     return not error
 
-def createImageFromCsv(file):
+def createImageFromCsv(user, file):
     list_img = []
     if os.path.isfile(file):
+        task = Task(user_id=user, csv_file=os.path.basename(file))
+        db.session.add(task)
+        db.session.commit()
         with open(file) as csv_file:
             new_image = CardGenerator()
             csv_reader = csv.reader(csv_file, delimiter=';')
             for row in csv_reader:
                 l = new_image.set_id(row[0]).set_first_name(row[1]).set_last_name(row[2]).set_study_field(row[3]).create_image()
                 list_img.append(l)
-    return list_img
+        task.zip_file = packFilesTozIP(list_img)
+        task.completed = True
+        deleteImages(list_img)
+        db.session.commit()
+    return True
+
+def packFilesTozIP(photos):
+    zip_file_name = 'photos' + str(datetime.timestamp(datetime.now())).replace('.', '') + '.zip'
+    zip_path = os.path.join(const.GENERATED_PATH_DIR, zip_file_name)
+    with ZipFile(zip_path, 'w') as zip:
+        for file in photos:
+            if os.path.isfile(os.path.join(const.GENERATED_PATH_DIR, file)):
+                zip.write(os.path.join(const.GENERATED_PATH_DIR, file), file)
+    return zip_file_name
+
+def deleteImages(photos):
+    for file in photos:
+        if os.path.exists(os.path.join(const.GENERATED_PATH_DIR, file)):
+            os.remove(os.path.join(const.GENERATED_PATH_DIR, file))
+    return True
 
 
+def startThreadsForGenImageFromCsv(user, file):
+    t = threading.Thread(target=createImageFromCsv, args=(user.id, file,))
+    t.start()

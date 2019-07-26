@@ -26,7 +26,6 @@
             <table class="table table-striped table-bordered task-table">
                 <thead>
                 <tr>
-                    <th>Id</th>
                     <th>CSV file</th>
                     <th>Uploaded</th>
                     <th>Completed</th>
@@ -35,8 +34,7 @@
                 </thead>
                 <tbody>
                     {% for task in tasks %}
-                    <tr {% if task.completed == True %} style="background-color: green; color: white;" {% endif %}>
-                        <td>{{ task.id }}</td>
+                    <tr>
                         <td>{{ task.csv_file }}</td>
                         <td>{{ task.upload }}</td>
                         <td>{{ task.completed }}</td>

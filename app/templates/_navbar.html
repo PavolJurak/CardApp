@@ -4,20 +4,20 @@
             <a class="navbar-brand" href="#">Card App</a>
         </div>
         <ul class="nav navbar-nav">
-            <li class="active">
+            <li class="{% if url_for('main.index') == request.path %} active {% endif %}">
                 <a href="{{ url_for('main.index') }}">Home</a>
             </li>
             {% if current_user.is_authenticated %}
-            <li>
+            <li class="{% if url_for('main.profile') == request.path %} active {% endif %}">
                 <a href="{{ url_for('main.profile') }}">Profile</a>
             </li>
-            <li>
+            <li class="{% if url_for('main.card_duplicate') == request.path %} active {% endif %}">
                 <a href="{{ url_for('main.card_duplicate') }}">Card duplicates</a>
             </li>
-            <li>
+            <li class="{% if url_for('main.card_request') == request.path %} active {% endif %}">
                 <a href="{{ url_for('main.card_request')}}">Card Requests</a>
             </li>
-            <li class="dropdown">
+            <li class="dropdown {% if request.path in(url_for('main.one_card'), url_for('main.manyCards'), url_for('main.image_admin'))  %} active {% endif %}">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Image generator<span class="caret"></span></a>
                 <ul class="dropdown-menu">
                     <li><a href="{{ url_for('main.one_card') }}">One card</a></li>
@@ -25,15 +25,15 @@
                     <li><a href="{{ url_for('main.image_admin') }}">Upload photos</a></li>
                 </ul>
             </li>
-            <li>
+            <li class="{% if url_for('main.report') == request.path %} active {% endif %}">
                 <a href="{{ url_for('main.report') }}">Report</a>
             </li>
             {% endif %}
             {% if not current_user.is_authenticated %}
-            <li>
+            <li class="{% if url_for('auth.login') == request.path %} active {% endif %}">
                 <a href="{{ url_for('auth.login') }}">Login</a>
             </li>
-            <li>
+            <li class="{% if url_for('auth.signup') == request.path %} active {% endif %}">
                 <a href="{{ url_for('auth.signup') }}">Sign up</a>
             </li>
             {% endif %}
